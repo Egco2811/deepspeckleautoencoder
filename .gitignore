@@ -2,6 +2,7 @@ pixelLabelImages2/
 pixelLabelValImages2/
 trainingImages2/
 validationImages2/
+*.fig
 
 # JPEG
 *.jpg
