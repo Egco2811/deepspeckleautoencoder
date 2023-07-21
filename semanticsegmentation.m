@@ -4,7 +4,7 @@ load mnist_28.mat
 % save mnist_28.mat
 %% 
 %selecting and saving images to train
-numE = 400;
+numE = 600;
 validP = 0.25;
 idx1 = (training.labels == 1);
 place1 = find(cumsum(idx1) > numE-1);
@@ -134,24 +134,20 @@ layers = [
     pixelClassificationLayer
 ];
 %% 
-
-
 %setting training options
 options = trainingOptions( ...
 'adam',...
-'MiniBatchSize', 800,...
+'MiniBatchSize', 900,...
 'MaxEpochs',3000, ...
 'Plots', 'training-progress', ...
 'ValidationData', pximdsVal, ...
-'ValidationFrequency',10, ...
-'ValidationPatience',5);
+'ValidationFrequency',20, ...
+'ValidationPatience',10);
 %% 
-
 %training net
 net =  trainNetwork(pximds, lgraph_2, options);
 save mnist_28.mat
 %% 
-
 %test code
 for k=1:12
     idx = 1;
