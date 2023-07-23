@@ -1,5 +1,6 @@
 clear
 load mnist.mat
+load layerGraph.mat
 %% 
 %selecting and saving images to train
 numE = 4000;
