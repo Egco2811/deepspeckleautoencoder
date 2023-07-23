@@ -1,10 +1,8 @@
 clear
-load mnist_28.mat
-%% 
-% save mnist_28.mat
+load mnist.mat
 %% 
 %selecting and saving images to train
-numE = 600;
+numE = 4000;
 validP = 0.25;
 idx1 = (training.labels == 1);
 place1 = find(cumsum(idx1) > numE-1);
@@ -137,7 +135,7 @@ layers = [
 %setting training options
 options = trainingOptions( ...
 'adam',...
-'MiniBatchSize', 900,...
+'MiniBatchSize', 1000,...
 'MaxEpochs',3000, ...
 'Plots', 'training-progress', ...
 'ValidationData', pximdsVal, ...
@@ -146,7 +144,7 @@ options = trainingOptions( ...
 %% 
 %training net
 net =  trainNetwork(pximds, lgraph_2, options);
-save mnist_28.mat
+save((num2str(numE*3))+"_images_trained_net", "net")
 %% 
 %test code
 for k=1:12
