@@ -4,6 +4,7 @@ trainingImages2/
 validationImages2/
 *.fig
 mnist_28.mat
+
 # JPEG
 *.jpg
 *.jpeg
