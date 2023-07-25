@@ -3,7 +3,7 @@ load mnist.mat
 load layerGraph.mat
 %% 
 %selecting and saving images to train
-numE = 4000;
+numE = 1200;
 validP = 0.25;
 idx1 = (training.labels == 1);
 place1 = find(cumsum(idx1) > numE-1);
@@ -86,62 +86,15 @@ gTruthVal = groundTruth(gtDataSourceVal,labelDefs,labelDataVal);
 pxdsVal = pixelLabelDatastore(gTruthVal);
 pximdsVal = combine(valds,pxdsVal);
 %% 
-
-%creating encoder decoder structure
-encoderBlock = @(growthRate, inputDepth) [
-    convolution2dLayer(3,inputDepth,"Padding",'same')
-    batchNormalizationLayer
-    reluLayer
-    convolution2dLayer(3,inputDepth+growthRate,"Padding",'same')
-    batchNormalizationLayer
-    reluLayer
-    convolution2dLayer(3,inputDepth+growthRate*2,"Padding",'same')
-    batchNormalizationLayer
-    reluLayer("Name","db"+num2str(inputDepth))];
-decoderBlock = @(growthRate, inputDepth) [
-    convolution2dLayer(3,inputDepth,"Padding",'same')
-    batchNormalizationLayer
-    reluLayer
-    convolution2dLayer(3,inputDepth-growthRate,"Padding",'same')
-    batchNormalizationLayer
-    reluLayer];
-
-layers = [
-    imageInputLayer([28 28 1])
-    convolution2dLayer(3, 8, Padding="same")
-    reluLayer
-    encoderBlock(16,32)
-    maxPooling2dLayer(2,"Stride",2)
-    encoderBlock(32,64)
-    maxPooling2dLayer(2,"Stride",2)
-    convolution2dLayer(3, 128, Padding="same")
-    reluLayer
-    convolution2dLayer(3, 256, Padding="same")
-    reluLayer
-    transposedConv2dLayer(2,128,"Stride",2, "Name", "up1")
-    depthConcatenationLayer(2)
-    decoderBlock(64, 128)
-    transposedConv2dLayer(2,64,"Stride",2, "Name","up2")
-    depthConcatenationLayer(2)
-    decoderBlock(32,64)
-    convolution2dLayer(3, 16, Padding="same")
-    reluLayer
-    convolution2dLayer(3, 8, Padding="same")
-    reluLayer
-    convolution2dLayer(3, 2, Padding="same")
-    softmaxLayer
-    pixelClassificationLayer
-];
-%% 
 %setting training options
 options = trainingOptions( ...
 'adam',...
-'MiniBatchSize', 1000,...
+'MiniBatchSize', 1200,...
 'MaxEpochs',3000, ...
 'Plots', 'training-progress', ...
 'ValidationData', pximdsVal, ...
 'ValidationFrequency',20, ...
-'ValidationPatience',10);
+'ValidationPatience',15);
 %% 
 %training net
 net =  trainNetwork(pximds, lgraph_2, options);
