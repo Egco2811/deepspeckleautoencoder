@@ -1,101 +1,118 @@
 clear
 load mnist.mat
 load regressionnet.mat
-%% 
+%%
 %selecting and saving images to train
-numE = 1600;
-validP = 0.25;
-idx1 = (training.labels == 1);
-place1 = find(cumsum(idx1) > numE-1);
-idx2 = (training.labels == 2);
-place2 = find(cumsum(idx2) > numE-1);
-idx4 = (training.labels == 4);
-place4 = find(cumsum(idx4) > numE-1);
-idx8 = (training.labels == 8);
-place8 = find(cumsum(idx8) > numE-1);
-images1 = training.images(:,:,idx1(1:place1));
-images2 = training.images(:,:,idx2(1:place2));
-images4 = training.images(:,:,idx4(1:place4));
-images8 = training.images(:,:,idx8(1:place8));
-trainingImages = cat(3, images1(:,:,1:(numE*(1-validP))), images2(:,:,1:numE*(1-validP)), images4(:,:,1:numE*(1-validP)), images8(:,:,1:numE*(1-validP)));
-validationImages = cat(3, images1(:,:,(numE*(1-validP)+1):numE), images2(:,:,(numE*(1-validP)+1):numE), images4(:,:,(numE*(1-validP)+1):numE), images8(:,:,(numE*(1-validP)+1):numE));
+idx = 0;
+numE = 300;
+validP = 0.10;
+testP = 0.20;
+trainingImages = [];
+validationImages = [];
+testImages = [];
+for i=0:9
+idx = (training.labels == i);
+place = find(cumsum(idx) > numE-1);
+images = training.images(:,:,idx(1:place));
+trainingImages = cat(3, trainingImages, images(:,:,1:(numE*(1-validP))));
+validationImages = cat(3, validationImages, images(:,:,(numE*(1-validP)+1:size(images,3))));
+idxTest = (test.labels == i);
+placeTest = find(cumsum(idxTest) > numE*testP-1);
+imagesTest = test.images(:,:,idxTest(1:placeTest));
+testImages = cat(3, testImages, imagesTest);
+end
 
 delete('trainingGround\*')
 for k = 1:size(trainingImages, 3)
-    imwrite(trainingImages(:,:,k),"trainingGround\image"+num2str(k)+".png");
+    imwrite(trainingImages(:,:,k),"trainingGround\image"+num2str(k)+".jpg");
 end
 
 delete('validationGround\*')
 for k = 1:size(validationImages, 3)
-    imwrite(validationImages(:,:,k),"validationGround\image"+num2str(k)+".png");
+    imwrite(validationImages(:,:,k),"validationGround\image"+num2str(k)+".jpg");
 end
 
-trainingImagesNoised = trainingImages - randn(28)/2;
+delete('testGround\*')
+for k = 1:size(testImages, 3)
+    imwrite(testImages(:,:,k),"testGround\image"+num2str(k)+".jpg");
+end
+
+trainingImagesNoised = rescale(trainingImages - (randn(28)));
 delete('trainingImages\*')
 for k = 1:size(trainingImagesNoised, 3)
-    imwrite(trainingImagesNoised(:,:,k),"trainingImages\image"+num2str(k)+".png");
+    imwrite(trainingImagesNoised(:,:,k),"trainingImages\image"+num2str(k)+".jpg");
 end
 
-validationImagesNoised = validationImages - randn(28)/2;
+validationImagesNoised = rescale(validationImages - (randn(28)));
 delete('validationImages\*')
 for k = 1:size(validationImagesNoised, 3)
-imwrite(validationImagesNoised(:,:,k),"validationImages\image"+num2str(k)+".png");
+imwrite(validationImagesNoised(:,:,k),"validationImages\image"+num2str(k)+".jpg");
 end
+
+testImagesNoised = rescale(testImages - (randn(28)));
+delete('testImages\*')
+for k = 1:size(testImagesNoised, 3)
+imwrite(testImagesNoised(:,:,k),"testImages\image"+num2str(k)+".jpg");
+end
+
 
 %creating imagedatastore from the files
 ds = imageDatastore("trainingGround\");
 valDs = imageDatastore("validationGround\");
 noisedDs = imageDatastore("trainingImages\");
 noisedValDs= imageDatastore("validationImages\");
+testDs = imageDatastore("testGround\");
+noisedTestDs = imageDatastore("testImages\");
 
 combinedDs = combine(noisedDs, ds);
 combinedValDs = combine(noisedValDs, valDs);
+combinedTestDs = combine(noisedTestDs, testDs);
 %% 
 %setting training options
 options = trainingOptions( ...
 'adam',...
-'MiniBatchSize', 4800,...
+'MiniBatchSize', 2700,...
 'MaxEpochs',3000, ...
 'Plots', 'training-progress', ...
 'ValidationData', combinedValDs, ...
 'ValidationFrequency',20, ...
-'ValidationPatience',15);
+'ValidationPatience',1);
 %% 
 %training net
-net =  trainNetwork(combinedDs, lgraph_4, options);
+net =  trainNetwork(combinedDs, lgraph_1, options);
 save((num2str(numE*3))+"_images_trained_net", "net")
 %% 
-%test code
-for k=1:8
-    idx = 1;
-    trueCheck = 0;
-    while trueCheck ~= 1
-    idx = randi(size(test.images,3));
-    if test.labels(idx) == (6)
-        trueCheck = 1;
-    end  
-    end
+%prediction
+for k=1:8  
+    idx = randi(size(testImages,3));
     subplot(2,8,k)
-    noisedTest = test.images(:,:,idx) - randn(28)/2;
-    imagesc(noisedTest*255)
+    image(readimage((noisedTestDs),idx));
     colormap(gray)
     title("ground "+num2str(idx))
     subplot(2,8,k+8)
-    prediction = predict(net,noisedTest*255);
-    imagesc(prediction(:,:,1))
+    prediction = predict(net,noisedTestDs);
+    image(prediction(:,:,1,idx))
     colormap(gray)
     title("prediction "+num2str(idx))
 end
-%%
-for k=1:8
-    idx = randi(size(trainingImagesNoised,3));
-    subplot(2,8,k)
-    imagesc(trainingImagesNoised(:,:,idx)*255)
-    colormap(gray)
-    title("ground "+num2str(idx))
-    subplot(2,8,k+8)
-    prediction = predict(net,trainingImagesNoised(:,:,idx)*255);
-    imagesc(prediction(:,:,1))
-    colormap(gray)
-    title("prediction "+num2str(idx))
-end
+%% 
+% %loss calc
+% totalL = 0;
+% for i=1:size(trainingImagesNoised,3)
+%     prediction = predict(net, noisedTestDs);
+%     sumL = 0;
+%     for n=1:size(prediction,1)
+%         rowsum = 0;
+%         for m=1:size(prediction,2)
+%         g = trainingImages(n,m,i);
+%         p = prediction(n,m);
+%         pixelL = (g-p)^2;
+%         rowsum = rowsum + pixelL;
+%         end
+%         sumL = sumL + rowsum;
+%     end
+%     totalL = totalL + sumL;
+%     Loss = sqrt(totalL/(28*28));
+% end
+
+
